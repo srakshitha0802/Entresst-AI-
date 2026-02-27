@@ -1,0 +1,79 @@
+Design and develop a full-stack web application powered by a Generative AI backend
+that delivers personalised, adaptive content to users — whether for learning, career guidance,
+mental wellness, civic awareness, or any socially relevant domain of your choice.
+The GenAI backend must dynamically personalise responses and content based on
+user interactions, preferences, and demonstrated knowledge. The frontend must provide a
+clean, interactive, and visually engaging user experience — going well beyond a
+plain chatbot interface.
+Suggested Application Domains
+Teams may choose any socially or technically relevant domain. Suggested areas include:
+• Personalised academic tutoring
+• Career path and skill gap advisor
+• Mental health and wellness companion
+• Civic literacy and government schemes
+awareness
+• Local language learning assistant
+• Resume and interview preparation tool
+• Environmental awareness and sustainability
+tracker
+• Financial literacy for students
+5 of 15 Solasta 2026GDG Hackathon Solasta 2026 | IIITDM Kurnool Problem Statements — Participants Only
+Key Technical Deliverables
+▶ Deliverable 1 — Adaptive GenAI Backend
+Backend and GenAI Requirements
+• Integrate an LLM API (such as Gemini, OpenAI, or an open-source alternative) as the
+core intelligence layer of your application.
+• The AI must assess user context — such as their experience level, past responses, or
+stated preferences — and adjust its outputs accordingly.
+• Dynamically generate personalised explanations, suggestions, quizzes, or recom-
+mendations tailored to each individual user’s profile.
+• The backend must handle API calls efficiently, ensuring a smooth, low-latency user
+experience without perceptible delays.
+▶ Deliverable 2 — Interactive and Engaging Frontend
+Frontend and UI/UX Requirements
+• The interface must not be a plain text chatbox — it should feel like a purposefully
+designed product.
+• Build using modern web technologies such as React, Vue, Next.js, Tailwind CSS, or
+any preferred frontend stack.
+• IncludeinteractiveUIelementssuchasprogresstrackers,visualdashboards,animated
+feedback, or data visualisations relevant to your chosen domain.
+• Ensure the interface is responsiveand functions seamlessly on both desktop and mobile
+browsers.
+▶ Deliverable 3 — Personalisation and Feedback Loop
+• Implement a mechanism to gather implicit and explicit user feedback to continuously
+refine the AI’s responses.
+– Implicit: time spent on a section, repeated queries, navigation patterns.
+– Explicit: ratings, comprehension checks, preference selections.
+• UsethisfeedbacktoadaptsubsequentAIoutputs—forexample, simplifyingexplanations
+if a user appears confused, or increasing difficulty if a user demonstrates proficiency.
+6 of 15 Solasta 2026GDG Hackathon Solasta 2026 | IIITDM Kurnool Problem Statements — Participants Only
+▶ Deliverable 4 — Accessibility and Inclusivity
+Accessibility is Non-Negotiable
+A solution that cannot be used by everyone fails its core purpose. Your application must:
+• Be fully functional on standard mobile and desktop web browserswithout requiring
+any additional software or hardware.
+• Follow basic web accessibility guidelines — readable fonts, sufficient colour contrast,
+and keyboard navigability.
+• Be deployable to a free or low-cost hosting platform (e.g., Vercel, Render, Railway,
+or Firebase) so it is accessible to anyone with an internet connection.
+Submission Checklist
+1. GitHubRepository(inGDG’sOfficialOrganisationofIIITDMKurnool)— README.md
+must include: agent name, agent address, framework used, setup instructions, architecture
+explanation, and links to any additional resources.
+2. Presentation (3–5 minutes) — Must demonstrate the problem being solved, the agent’s
+reasoning and planning process, step-by-step execution, and the final delivered result. Do not
+merely show the UI — demonstrate the intelligence.
+Evaluation Criteria
+Criterion 	Weight
+Relevance and impact of the chosen application
+domain	High
+Effectiveness and intelligence of the GenAI
+integration	High
+Quality and interactivity of the frontend UI/UX 	High
+Personalisation and responsiveness of the feedback
+loop	Medium
+Cross-device accessibility and mobile
+responsiveness	Medium
+Code quality, architecture, and backend design 	Medium
+Demo clarity and overall presentation 	Medium
+
