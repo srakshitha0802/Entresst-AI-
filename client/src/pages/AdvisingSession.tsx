@@ -2,17 +2,60 @@ import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Send, Bot, User, Sparkles, BookOpen, ExternalLink, ArrowRight } from "lucide-react";
 
-// Mock conversation
-const INITIAL_CHAT = [
-  { role: 'assistant', content: "Hello Alex! I've analyzed your recent project in React. To reach a Senior Frontend role, we need to bridge your gap in System Design. Shall we start a brief assessment?" }
-];
+interface Message {
+  role: 'assistant' | 'user';
+  content: string;
+  timestamp?: string;
+}
+
+interface Recommendation {
+  title: string;
+  type: string;
+  urgency: string;
+  description?: string;
+  progress?: number;
+}
 
 export default function AdvisingSession() {
-  const [messages, setMessages] = useState(INITIAL_CHAT);
+  const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [isTyping, setIsTyping] = useState(false);
   const [showInteractiveContent, setShowInteractiveContent] = useState(false);
+  const [recommendations, setRecommendations] = useState<Recommendation[]>([]);
   const scrollRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    // Fetch initial data and recommendations on mount
+    const initializeSession = async () => {
+      try {
+        // Get user profile for personalized greeting
+        const profileRes = await fetch('/api/user/profile');
+        const profile = profileRes.ok ? await profileRes.json() : { name: 'User' };
+
+        // Get recommendations
+        const recRes = await fetch('/api/recommendations');
+        if (recRes.ok) {
+          const recData = await recRes.json();
+          setRecommendations(recData.map((r: Recommendation) => ({ ...r, progress: 15 })));
+        }
+
+        // Set initial greeting with real user name
+        setMessages([{ 
+          role: 'assistant', 
+          content: `Hello ${profile.name}! I've analyzed your career profile. To help you reach your goal as ${profile.targetRole || 'a senior role'}, I've identified key areas for growth. How would you like to proceed?`
+        }]);
+      } catch (error) {
+        console.error('Failed to initialize session:', error);
+        // Fallback greeting
+        setMessages([{ 
+          role: 'assistant', 
+          content: "Hello! I've analyzed your career profile. How can I help you with your career growth today?"
+        }]);
+      }
+    };
+
+    initializeSession();
+  }, []);
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -20,23 +63,57 @@ export default function AdvisingSession() {
     }
   }, [messages, isTyping]);
 
-  const handleSend = () => {
+  const handleSend = async () => {
     if (!input.trim()) return;
     
-    setMessages(prev => [...prev, { role: 'user', content: input }]);
+    const userMessage = input;
+    setMessages(prev => [...prev, { role: 'user', content: userMessage }]);
     setInput("");
     setIsTyping(true);
 
-    // Simulate AI response
-    setTimeout(() => {
-      setIsTyping(false);
+    try {
+      // Call real AI chat API
+      const response = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          message: userMessage,
+          context: { targetRole: 'Senior Full Stack Developer' }
+        })
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setMessages(prev => [...prev, { 
+          role: 'assistant', 
+          content: data.content,
+          timestamp: data.timestamp
+        }]);
+        
+        // Show interactive content after first response
+        if (!showInteractiveContent) {
+          setShowInteractiveContent(true);
+        }
+      } else {
+        throw new Error('Failed to get response');
+      }
+    } catch (error) {
+      console.error('Chat error:', error);
       setMessages(prev => [...prev, { 
         role: 'assistant', 
-        content: "Based on that, I think you have a solid grasp on state management. However, large-scale application architecture seems to be a weak point. I've generated a customized learning path for you on the right." 
+        content: "I apologize, but I'm having trouble processing your request right now. Please try again or check if the AI service is properly configured."
       }]);
-      setShowInteractiveContent(true);
-    }, 1500);
+    } finally {
+      setIsTyping(false);
+    }
   };
+
+  const suggestions = [
+    "What skills do I need for my target role?",
+    "Create a personalized learning plan",
+    "Analyze my current skill gaps",
+    "Suggest career advancement opportunities"
+  ];
 
   return (
     <div className="h-full flex overflow-hidden">
@@ -96,18 +173,20 @@ export default function AdvisingSession() {
             />
             <button 
               onClick={handleSend}
-              className="absolute right-2 top-1/2 -translate-y-1/2 w-10 h-10 bg-primary rounded-lg flex items-center justify-center text-primary-foreground hover:bg-primary/90 transition-colors"
+              disabled={isTyping}
+              className="absolute right-2 top-1/2 -translate-y-1/2 w-10 h-10 bg-primary rounded-lg flex items-center justify-center text-primary-foreground hover:bg-primary/90 transition-colors disabled:opacity-50"
               data-testid="button-send-chat"
             >
               <Send className="w-4 h-4" />
             </button>
           </div>
           <div className="flex gap-2 mt-3 overflow-x-auto pb-2 scrollbar-hide">
-            {["I want to be a full-stack dev.", "What is system design?", "Give me a practical test."].map((suggestion, i) => (
+            {suggestions.map((suggestion, i) => (
               <button 
                 key={i}
                 onClick={() => setInput(suggestion)}
-                className="whitespace-nowrap px-3 py-1.5 rounded-full border border-white/10 bg-white/5 text-xs text-muted-foreground hover:text-foreground hover:border-white/20 transition-all"
+                disabled={isTyping}
+                className="whitespace-nowrap px-3 py-1.5 rounded-full border border-white/10 bg-white/5 text-xs text-muted-foreground hover:text-foreground hover:border-white/20 transition-all disabled:opacity-50"
               >
                 {suggestion}
               </button>
@@ -133,29 +212,31 @@ export default function AdvisingSession() {
               </div>
 
               <div className="space-y-4">
-                <div className="p-5 rounded-2xl glass-panel relative overflow-hidden group border-primary/30">
-                  <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
-                    <BookOpen className="w-24 h-24 text-primary" />
-                  </div>
-                  <h4 className="text-lg font-bold mb-2 relative z-10">Module 1: System Design Basics</h4>
-                  <p className="text-sm text-muted-foreground mb-4 w-4/5 relative z-10">
-                    A personalized module generated based on your gap analysis. Focuses on scalable frontend architectures.
-                  </p>
-                  <div className="flex items-center gap-3 relative z-10">
-                    <div className="h-2 w-full bg-black/50 rounded-full overflow-hidden">
-                      <div className="h-full bg-gradient-to-r from-primary to-secondary w-[15%]" />
+                {recommendations.length > 0 ? recommendations.map((rec, i) => (
+                  <div key={i} className="p-5 rounded-2xl glass-panel relative overflow-hidden group border-primary/30">
+                    <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+                      <BookOpen className="w-24 h-24 text-primary" />
                     </div>
-                    <span className="text-xs font-mono text-muted-foreground">15%</span>
+                    <h4 className="text-lg font-bold mb-2 relative z-10">{rec.title}</h4>
+                    <p className="text-sm text-muted-foreground mb-4 w-4/5 relative z-10">
+                      {rec.description || 'Personalized content based on your skill gaps and career goals.'}
+                    </p>
+                    <div className="flex items-center gap-3 relative z-10">
+                      <div className="h-2 w-full bg-black/50 rounded-full overflow-hidden">
+                        <div className="h-full bg-gradient-to-r from-primary to-secondary" style={{ width: `${rec.progress || 0}%` }} />
+                      </div>
+                      <span className="text-xs font-mono text-muted-foreground">{rec.progress || 0}%</span>
+                    </div>
+                    <button className="mt-6 bg-white/10 hover:bg-white/20 px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 transition-colors relative z-10">
+                      Start Learning <ArrowRight className="w-4 h-4" />
+                    </button>
                   </div>
-                  <button className="mt-6 bg-white/10 hover:bg-white/20 px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 transition-colors relative z-10">
-                    Resume Module <ArrowRight className="w-4 h-4" />
-                  </button>
-                </div>
-
-                <div className="p-5 rounded-2xl border border-white/5 bg-black/20 opacity-70">
-                  <h4 className="text-lg font-bold mb-2">Module 2: Distributed State</h4>
-                  <p className="text-sm text-muted-foreground mb-4">Locked. Complete Module 1 to dynamically generate this content.</p>
-                </div>
+                )) : (
+                  <div className="p-5 rounded-2xl border border-white/5 bg-black/20">
+                    <h4 className="text-lg font-bold mb-2">Complete Assessment</h4>
+                    <p className="text-sm text-muted-foreground mb-4">Take the skill assessment to get personalized recommendations.</p>
+                  </div>
+                )}
               </div>
 
               <div className="mt-8 pt-8 border-t border-white/10">
@@ -166,7 +247,8 @@ export default function AdvisingSession() {
                 <div className="grid gap-3">
                   {[
                     "Build a real-time collaborative document editor",
-                    "Design an e-commerce checkout state machine"
+                    "Design an e-commerce checkout state machine",
+                    "Create a microservices-based API gateway"
                   ].map((proj, i) => (
                     <div key={i} className="p-4 rounded-xl border border-white/5 hover:border-secondary/30 bg-white/5 cursor-pointer transition-colors">
                       <p className="text-sm font-medium">{proj}</p>
@@ -183,3 +265,4 @@ export default function AdvisingSession() {
     </div>
   );
 }
+

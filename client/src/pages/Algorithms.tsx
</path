@@ -1,0 +1,1717 @@
+import { useState, useEffect, useCallback } from 'react';
+import { motion } from 'framer-motion';
+import { 
+  Play, 
+  Pause, 
+  RotateCcw, 
+  Code, 
+  BookOpen,
+  Lightbulb,
+  ArrowUpDown,
+  GitBranch,
+  Network,
+  Layers,
+  Cpu,
+  Clock,
+  CheckCircle,
+  XCircle,
+  Copy,
+  Check,
+  Download,
+  PlayCircle,
+  FileCode,
+  BarChart3,
+  Terminal,
+  RefreshCw,
+  FastForward
+} from 'lucide-react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Badge } from '@/components/ui/badge';
+import { Progress } from '@/components/ui/progress';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { useToast } from '@/hooks/use-toast';
+import { 
+  BarChart, 
+  Bar, 
+  XAxis, 
+  YAxis, 
+  CartesianGrid, 
+  Tooltip, 
+  ResponsiveContainer,
+  LineChart,
+  Line,
+  RadarChart,
+  PolarGrid,
+  PolarAngleAxis,
+  PolarRadiusAxis,
+  Radar
+} from 'recharts';
+
+interface AlgorithmStep {
+  array: number[];
+  highlight: number[];
+  swap: number[];
+  compare: number[];
+  sorted: number[];
+  description: string;
+  currentIndex?: number;
+  left?: number;
+  right?: number;
+  mid?: number;
+  heapIndex?: number;
+}
+
+interface Algorithm {
+  id: string;
+  name: string;
+  category: string;
+  timeComplexityBest: string;
+  timeComplexityAverage: string;
+  timeComplexityWorst: string;
+  spaceComplexity: string;
+  description: string;
+  code: {
+    javascript: string;
+    python: string;
+  };
+  useCases: string[];
+  interviewTips: string[];
+}
+
+const ALGORITHMS: Algorithm[] = [
+  {
+    id: 'bubble-sort',
+    name: 'Bubble Sort',
+    category: 'Sorting',
+    timeComplexityBest: 'O(n)',
+    timeComplexityAverage: 'O(n²)',
+    timeComplexityWorst: 'O(n²)',
+    spaceComplexity: 'O(1)',
+    description: 'Repeatedly steps through the list, compares adjacent elements and swaps them if they are in the wrong order.',
+    code: {
+      javascript: `function bubbleSort(arr) {
+  const n = arr.length;
+  for (let i = 0; i < n - 1; i++) {
+    for (let j = 0; j < n - i - 1; j++) {
+      if (arr[j] > arr[j + 1]) {
+        [arr[j], arr[j + 1]] = [arr[j + 1], arr[j]];
+      }
+    }
+  }
+  return arr;
+}`,
+      python: `def bubble_sort(arr):
+    n = len(arr)
+    for i in range(n - 1):
+        for j in range(n - i - 1):
+            if arr[j] > arr[j + 1]:
+                arr[j], arr[j + 1] = arr[j + 1], arr[j]
+    return arr`
+    },
+    useCases: ['Educational purposes', 'Nearly sorted arrays', 'Small datasets'],
+    interviewTips: ['Mention optimization with swapped flag', 'Discuss best/average/worst cases']
+  },
+  {
+    id: 'selection-sort',
+    name: 'Selection Sort',
+    category: 'Sorting',
+    timeComplexityBest: 'O(n²)',
+    timeComplexityAverage: 'O(n²)',
+    timeComplexityWorst: 'O(n²)',
+    spaceComplexity: 'O(1)',
+    description: 'Divides input into sorted and unsorted regions, repeatedly selecting the smallest element from unsorted region.',
+    code: {
+      javascript: `function selectionSort(arr) {
+  const n = arr.length;
+  for (let i = 0; i < n - 1; i++) {
+    let minIdx = i;
+    for (let j = i + 1; j < n; j++) {
+      if (arr[j] < arr[minIdx]) {
+        minIdx = j;
+      }
+    }
+    [arr[i], arr[minIdx]] = [arr[minIdx], arr[i]];
+  }
+  return arr;
+}`,
+      python: `def selection_sort(arr):
+    n = len(arr)
+    for i in range(n - 1):
+        min_idx = i
+        for j in range(i + 1, n):
+            if arr[j] < arr[min_idx]:
+                min_idx = j
+        arr[i], arr[min_idx] = arr[min_idx], arr[i]
+    return arr`
+    },
+    useCases: ['Memory-constrained environments', 'Simple implementation needed'],
+    interviewTips: ['Mention it makes O(n) swaps', 'Good for small N where movement cost is high']
+  },
+  {
+    id: 'insertion-sort',
+    name: 'Insertion Sort',
+    category: 'Sorting',
+    timeComplexityBest: 'O(n)',
+    timeComplexityAverage: 'O(n²)',
+    timeComplexityWorst: 'O(n²)',
+    spaceComplexity: 'O(1)',
+    description: 'Builds the sorted array one item at a time by inserting each element into its correct position.',
+    code: {
+      javascript: `function insertionSort(arr) {
+  for (let i = 1; i < arr.length; i++) {
+    let key = arr[i];
+    let j = i - 1;
+    while (j >= 0 && arr[j] > key) {
+      arr[j + 1] = arr[j];
+      j--;
+    }
+    arr[j + 1] = key;
+  }
+  return arr;
+}`,
+      python: `def insertion_sort(arr):
+    for i in range(1, len(arr)):
+        key = arr[i]
+        j = i - 1
+        while j >= 0 and arr[j] > key:
+            arr[j + 1] = arr[j]
+            j -= 1
+        arr[j + 1] = key
+    return arr`
+    },
+    useCases: ['Nearly sorted arrays', 'Online sorting', 'Small datasets'],
+    interviewTips: ['Best for nearly sorted data', 'Stable sorting algorithm']
+  },
+  {
+    id: 'merge-sort',
+    name: 'Merge Sort',
+    category: 'Sorting',
+    timeComplexityBest: 'O(n log n)',
+    timeComplexityAverage: 'O(n log n)',
+    timeComplexityWorst: 'O(n log n)',
+    spaceComplexity: 'O(n)',
+    description: 'Divide and conquer algorithm that divides array in half, sorts each half, then merges them back together.',
+    code: {
+      javascript: `function mergeSort(arr) {
+  if (arr.length <= 1) return arr;
+  
+  const mid = Math.floor(arr.length / 2);
+  const left = mergeSort(arr.slice(0, mid));
+  const right = mergeSort(arr.slice(mid));
+  
+  return merge(left, right);
+}
+
+function merge(left, right) {
+  const result = [];
+  while (left.length && right.length) {
+    result.push(left[0] <= right[0] ? left.shift() : right.shift());
+  }
+  return [...result, ...left, ...right];
+}`,
+      python: `def merge_sort(arr):
+    if len(arr) <= 1:
+        return arr
+    
+    mid = len(arr) // 2
+    left = merge_sort(arr[:mid])
+    right = merge_sort(arr[mid:])
+    
+    return merge(left, right)
+
+def merge(left, right):
+    result = []
+    i = j = 0
+    while i < len(left) and j < len(right):
+        if left[i] <= right[j]:
+            result.append(left[i])
+            i += 1
+        else:
+            result.append(right[j])
+            j += 1
+    result.extend(left[i:])
+    result.extend(right[j:])
+    return result`
+    },
+    useCases: ['External sorting', 'Linked lists', 'Stable sorting needed'],
+    interviewTips: ['Classic divide and conquer', 'Requires O(n) extra space']
+  },
+  {
+    id: 'quick-sort',
+    name: 'Quick Sort',
+    category: 'Sorting',
+    timeComplexityBest: 'O(n log n)',
+    timeComplexityAverage: 'O(n log n)',
+    timeComplexityWorst: 'O(n²)',
+    spaceComplexity: 'O(log n)',
+    description: 'Selects a pivot element and partitions array around the pivot, recursively sorting partitions.',
+    code: {
+      javascript: `function quickSort(arr, low = 0, high = arr.length - 1) {
+  if (low < high) {
+    const pi = partition(arr, low, high);
+    quickSort(arr, low, pi - 1);
+    quickSort(arr, pi + 1, high);
+  }
+  return arr;
+}
+
+function partition(arr, low, high) {
+  const pivot = arr[high];
+  let i = low - 1;
+  for (let j = low; j < high; j++) {
+    if (arr[j] < pivot) {
+      i++;
+      [arr[i], arr[j]] = [arr[j], arr[i]];
+    }
+  }
+  [arr[i + 1], arr[high]] = [arr[high], arr[i + 1]];
+  return i + 1;
+}`,
+      python: `def quick_sort(arr, low=0, high=None):
+    if high is None:
+        high = len(arr) - 1
+    if low < high:
+        pi = partition(arr, low, high)
+        quick_sort(arr, low, pi - 1)
+        quick_sort(arr, pi + 1, high)
+    return arr
+
+def partition(arr, low, high):
+    pivot = arr[high]
+    i = low - 1
+    for j in range(low, high):
+        if arr[j] < pivot:
+            i += 1
+            arr[i], arr[j] = arr[j], arr[i]
+    arr[i + 1], arr[high] = arr[high], arr[i + 1]
+    return i + 1`
+    },
+    useCases: ['General purpose sorting', 'In-memory sorting', 'When average performance matters'],
+    interviewTips: ['Worst case when array is already sorted', 'Randomized pivot helps avoid worst case']
+  },
+  {
+    id: 'heap-sort',
+    name: 'Heap Sort',
+    category: 'Sorting',
+    timeComplexityBest: 'O(n log n)',
+    timeComplexityAverage: 'O(n log n)',
+    timeComplexityWorst: 'O(n log n)',
+    spaceComplexity: 'O(1)',
+    description: 'Comparison-based sorting that uses a binary heap data structure to sort elements.',
+    code: {
+      javascript: `function heapSort(arr) {
+  const n = arr.length;
+  
+  // Build max heap
+  for (let i = Math.floor(n / 2) - 1; i >= 0; i--) {
+    heapify(arr, n, i);
+  }
+  
+  // Extract elements
+  for (let i = n - 1; i > 0; i--) {
+    [arr[0], arr[i]] = [arr[i], arr[0]];
+    heapify(arr, i, 0);
+  }
+  return arr;
+}
+
+function heapify(arr, n, i) {
+  let largest = i;
+  const left = 2 * i + 1;
+  const right = 2 * i + 2;
+  
+  if (left < n && arr[left] > arr[largest]) largest = left;
+  if (right < n && arr[right] > arr[largest]) largest = right;
+  
+  if (largest !== i) {
+    [arr[i], arr[largest]] = [arr[largest], arr[i]];
+    heapify(arr, n, largest);
+  }
+}`,
+      python: `def heap_sort(arr):
+    n = len(arr)
+    
+    # Build max heap
+    for i in range(n // 2 - 1, -1, -1):
+        heapify(arr, n, i)
+    
+    # Extract elements
+    for i in range(n - 1, 0, -1):
+        arr[0], arr[i] = arr[i], arr[0]
+        heapify(arr, i, 0)
+    
+    return arr
+
+def heapify(arr, n, i):
+    largest = i
+    left = 2 * i + 1
+    right = 2 * i + 2
+    
+    if left < n and arr[left] > arr[largest]:
+        largest = left
+    if right < n and arr[right] > arr[largest]:
+        largest = right
+    
+    if largest != i:
+        arr[i], arr[largest] = arr[largest], arr[i]
+        heapify(arr, n, largest)`
+    },
+    useCases: ['Embedded systems', 'When worst-case guarantee needed', 'Priority queues'],
+    interviewTips: ['In-place but not stable', 'Always O(n log n)']
+  },
+  {
+    id: 'radix-sort',
+    name: 'Radix Sort',
+    category: 'Sorting',
+    timeComplexityBest: 'O(nk)',
+    timeComplexityAverage: 'O(nk)',
+    timeComplexityWorst: 'O(nk)',
+    spaceComplexity: 'O(n + k)',
+    description: 'Non-comparison sorting that sorts elements digit by digit using counting sort as subroutine.',
+    code: {
+      javascript: `function radixSort(arr) {
+  const max = Math.max(...arr);
+  let exp = 1;
+  
+  while (Math.floor(max / exp) > 0) {
+    countingSort(arr, exp);
+    exp *= 10;
+  }
+  return arr;
+}
+
+function countingSort(arr, exp) {
+  const n = arr.length;
+  const output = new Array(n);
+  const count = new Array(10).fill(0);
+  
+  for (let i = 0; i < n; i++) {
+    count[Math.floor(arr[i] / exp) % 10]++;
+  }
+  
+  for (let i = 1; i < 10; i++) {
+    count[i] += count[i - 1];
+  }
+  
+  for (let i = n - 1; i >= 0; i--) {
+    output[count[Math.floor(arr[i] / exp) % 10] - 1] = arr[i];
+    count[Math.floor(arr[i] / exp) % 10]--;
+  }
+  
+  for (let i = 0; i < n; i++) {
+    arr[i] = output[i];
+  }
+}`,
+      python: `def radix_sort(arr):
+    max_val = max(arr)
+    exp = 1
+    
+    while max_val // exp > 0:
+        counting_sort(arr, exp)
+        exp *= 10
+    
+    return arr
+
+def counting_sort(arr, exp):
+    n = len(arr)
+    output = [0] * n
+    count = [0] * 10
+    
+    for i in range(n):
+        count[(arr[i] // exp) % 10] += 1
+    
+    for i in range(1, 10):
+        count[i] += count[i - 1]
+    
+    for i in range(n - 1, -1, -1):
+        output[count[(arr[i] // exp) % 10] - 1] = arr[i]
+        count[(arr[i] // exp) % 10] -= 1
+    
+    for i in range(n):
+        arr[i] = output[i]`
+    },
+    useCases: ['Integer sorting', 'String sorting', 'When range is limited'],
+    interviewTips: ['Only for integers/strings', 'Stable sort used internally']
+  },
+  {
+    id: 'linear-search',
+    name: 'Linear Search',
+    category: 'Searching',
+    timeComplexityBest: 'O(1)',
+    timeComplexityAverage: 'O(n)',
+    timeComplexityWorst: 'O(n)',
+    spaceComplexity: 'O(1)',
+    description: 'Sequentially checks each element until a match is found or the list is exhausted.',
+    code: {
+      javascript: `function linearSearch(arr, target) {
+  for (let i = 0; i < arr.length; i++) {
+    if (arr[i] === target) {
+      return i; // Found at index i
+    }
+  }
+  return -1; // Not found
+}`,
+      python: `def linear_search(arr, target):
+    for i in range(len(arr)):
+        if arr[i] == target:
+            return i  # Found at index i
+    return -1  # Not found`
+    },
+    useCases: ['Unsorted arrays', 'Small datasets', 'Single search'],
+    interviewTips: ['Simplest search algorithm', 'Can stop early if element found']
+  },
+  {
+    id: 'binary-search',
+    name: 'Binary Search',
+    category: 'Searching',
+    timeComplexityBest: 'O(1)',
+    timeComplexityAverage: 'O(log n)',
+    timeComplexityWorst: 'O(log n)',
+    spaceComplexity: 'O(1)',
+    description: 'Efficiently searches a sorted array by repeatedly dividing the search interval in half.',
+    code: {
+      javascript: `function binarySearch(arr, target) {
+  let left = 0;
+  let right = arr.length - 1;
+  
+  while (left <= right) {
+    const mid = Math.floor((left + right) / 2);
+    
+    if (arr[mid] === target) return mid;
+    if (arr[mid] < target) left = mid + 1;
+    else right = mid - 1;
+  }
+  return -1; // Not found
+}`,
+      python: `def binary_search(arr, target):
+    left, right = 0, len(arr) - 1
+    
+    while left <= right:
+        mid = (left + right) // 2
+        
+        if arr[mid] == target:
+            return mid
+        elif arr[mid] < target:
+            left = mid + 1
+        else:
+            right = mid - 1
+    
+    return -1  # Not found`
+    },
+    useCases: ['Sorted arrays', 'Dictionary lookups', 'Debugging'],
+    interviewTips: ['Requires sorted array', 'Can be implemented recursively']
+  },
+  {
+    id: 'bfs',
+    name: 'Breadth-First Search',
+    category: 'Graph',
+    timeComplexityBest: 'O(V + E)',
+    timeComplexityAverage: 'O(V + E)',
+    timeComplexityWorst: 'O(V + E)',
+    spaceComplexity: 'O(V)',
+    description: 'Explores all neighbor nodes at the present depth before moving to nodes at the next depth level.',
+    code: {
+      javascript: `function bfs(graph, start) {
+  const visited = new Set();
+  const queue = [start];
+  const result = [];
+  
+  visited.add(start);
+  
+  while (queue.length > 0) {
+    const node = queue.shift();
+    result.push(node);
+    
+    for (const neighbor of graph[node] || []) {
+      if (!visited.has(neighbor)) {
+        visited.add(neighbor);
+        queue.push(neighbor);
+      }
+    }
+  }
+  
+  return result;
+}`,
+      python: `from collections import deque
+
+def bfs(graph, start):
+    visited = set()
+    queue = deque([start])
+    result = []
+    
+    visited.add(start)
+    
+    while queue:
+        node = queue.popleft()
+        result.append(node)
+        
+        for neighbor in graph.get(node, []):
+            if neighbor not in visited:
+                visited.add(neighbor)
+                queue.append(neighbor)
+    
+    return result`
+    },
+    useCases: ['Shortest path in unweighted graph', 'Level-order traversal', 'Finding connected components'],
+    interviewTips: ['Uses queue data structure', 'Finds shortest path in unweighted graphs']
+  },
+  {
+    id: 'dfs',
+    name: 'Depth-First Search',
+    category: 'Graph',
+    timeComplexityBest: 'O(V + E)',
+    timeComplexityAverage: 'O(V + E)',
+    timeComplexityWorst: 'O(V + E)',
+    spaceComplexity: 'O(V)',
+    description: 'Explores as far as possible along each branch before backtracking.',
+    code: {
+      javascript: `function dfs(graph, start) {
+  const visited = new Set();
+  const result = [];
+  
+  function dfsHelper(node) {
+    if (visited.has(node)) return;
+    
+    visited.add(node);
+    result.push(node);
+    
+    for (const neighbor of graph[node] || []) {
+      dfsHelper(neighbor);
+    }
+  }
+  
+  dfsHelper(start);
+  return result;
+}`,
+      python: `def dfs(graph, start):
+    visited = set()
+    result = []
+    
+    def dfs_helper(node):
+        if node in visited:
+            return
+        
+        visited.add(node)
+        result.append(node)
+        
+        for neighbor in graph.get(node, []):
+            dfs_helper(neighbor)
+    
+    dfs_helper(start)
+    return result`
+    },
+    useCases: ['Path finding', 'Cycle detection', 'Topological sorting'],
+    interviewTips: ['Can be implemented recursively or iteratively', 'Uses stack (explicit or call stack)']
+  },
+  {
+    id: 'dijkstra',
+    name: "Dijkstra's Algorithm",
+    category: 'Graph',
+    timeComplexityBest: 'O(V²)',
+    timeComplexityAverage: 'O(V²)',
+    timeComplexityWorst: 'O(V²)',
+    spaceComplexity: 'O(V)',
+    description: 'Finds the shortest path between nodes in a weighted graph with non-negative edge weights.',
+    code: {
+      javascript: `function dijkstra(graph, start) {
+  const distances = {};
+  const visited = new Set();
+  const pq = [[0, start]];
+  
+  for (const node in graph) {
+    distances[node] = Infinity;
+  }
+  distances[start] = 0;
+  
+  while (pq.length > 0) {
+    pq.sort((a, b) => a[0] - b[0]);
+    const [dist, node] = pq.shift();
+    
+    if (visited.has(node)) continue;
+    visited.add(node);
+    
+    for (const [neighbor, weight] of graph[node] || []) {
+      const newDist = dist + weight;
+      if (newDist < distances[neighbor]) {
+        distances[neighbor] = newDist;
+        pq.push([newDist, neighbor]);
+      }
+    }
+  }
+  
+  return distances;
+}`,
+      python: `import heapq
+
+def dijkstra(graph, start):
+    distances = {node: float('inf') for node in graph}
+    distances[start] = 0
+    visited = set()
+    pq = [(0, start)]
+    
+    while pq:
+        dist, node = heapq.heappop(pq)
+        
+        if node in visited:
+            continue
+        visited.add(node)
+        
+        for neighbor, weight in graph.get(node, []):
+            new_dist = dist + weight
+            if new_dist < distances[neighbor]:
+                distances[neighbor] = new_dist
+                heapq.heappush(pq, (new_dist, neighbor))
+    
+    return distances`
+    },
+    useCases: ['GPS navigation', 'Network routing', 'Flight scheduling'],
+    interviewTips: ['Does not work with negative weights', 'Use priority queue for efficiency']
+  },
+  {
+    id: 'a-star',
+    name: 'A* Search Algorithm',
+    category: 'Graph',
+    timeComplexityBest: 'O(E)',
+    timeComplexityAverage: 'O(E)',
+    timeComplexityWorst: 'O(E)',
+    spaceComplexity: 'O(V)',
+    description: 'Informed search algorithm that uses heuristics to find the shortest path efficiently.',
+    code: {
+      javascript: `function aStar(graph, start, goal, h) {
+  const openSet = [start];
+  const cameFrom = {};
+  const gScore = { [start]: 0 };
+  const fScore = { [start]: h(start, goal) };
+  
+  while (openSet.length > 0) {
+    openSet.sort((a, b) => (fScore[a] || Infinity) - (fScore[b] || Infinity));
+    const current = openSet.shift();
+    
+    if (current === goal) {
+      return reconstructPath(cameFrom, current);
+    }
+    
+    for (const [neighbor, cost] of graph[current] || []) {
+      const tentativeG = (gScore[current] || Infinity) + cost;
+      
+      if (tentativeG < (gScore[neighbor] || Infinity)) {
+        cameFrom[neighbor] = current;
+        gScore[neighbor] = tentativeG;
+        fScore[neighbor] = tentativeG + h(neighbor, goal);
+        
+        if (!openSet.includes(neighbor)) {
+          openSet.push(neighbor);
+        }
+      }
+    }
+  }
+  
+  return null; // No path found
+}`,
+      python: `import heapq
+
+def a_star(graph, start, goal, h):
+    open_set = [(h(start, goal), start)]
+    came_from = {}
+    g_score = {start: 0}
+    f_score = {start: h(start, goal)}
+    
+    while open_set:
+        _, current = heapq.heappop(open_set)
+        
+        if current == goal:
+            return reconstruct_path(came_from, current)
+        
+        for neighbor, cost in graph.get(current, []):
+            tentative_g = g_score.get(current, float('inf')) + cost
+            
+            if tentative_g < g_score.get(neighbor, float('inf')):
+                came_from[neighbor] = current
+                g_score[neighbor] = tentative_g
+                f_score[neighbor] = tentative_g + h(neighbor, goal)
+                
+                if neighbor not in [n for _, n in open_set]:
+                    heapq.heappush(open_set, (f_score[neighbor], neighbor))
+    
+    return None`
+    },
+    useCases: ['Game pathfinding', 'GPS navigation', 'Puzzle solving'],
+    interviewTips: ['Combines Dijkstra with heuristic', 'Optimal if heuristic is admissible']
+  }
+];
+
+// Complexity comparison data
+const COMPLEXITY_DATA = [
+  { name: 'Bubble Sort', best: 1, average: 100, worst: 100 },
+  { name: 'Selection Sort', best: 100, average: 100, worst: 100 },
+  { name: 'Insertion Sort', best: 1, average: 100, worst: 100 },
+  { name: 'Merge Sort', best: 10, average: 10, worst: 10 },
+  { name: 'Quick Sort', best: 10, average: 10, worst: 100 },
+  { name: 'Heap Sort', best: 10, average: 10, worst: 10 },
+  { name: 'Linear Search', best: 1, average: 50, worst: 100 },
+  { name: 'Binary Search', best: 1, average: 1, worst: 1 },
+  { name: 'BFS', best: 10, average: 10, worst: 10 },
+  { name: 'DFS', best: 10, average: 10, worst: 10 },
+  { name: 'Dijkstra', best: 10, average: 10, worst: 10 },
+];
+
+// Algorithm implementations that generate steps
+function generateBubbleSortSteps(arr: number[]): AlgorithmStep[] {
+  const steps: AlgorithmStep[] = [];
+  const array = [...arr];
+  const sorted: number[] = [];
+  
+  steps.push({ array: [...array], highlight: [], swap: [], compare: [], sorted: [], description: 'Starting array' });
+
+  for (let i = 0; i < array.length; i++) {
+    for (let j = 0; j < array.length - i - 1; j++) {
+      steps.push({
+        array: [...array],
+        highlight: [],
+        swap: [],
+        compare: [j, j + 1],
+        sorted: [...sorted],
+        description: `Comparing elements at index ${j} and ${j + 1}: ${array[j]} vs ${array[j + 1]}`
+      });
+
+      if (array[j] > array[j + 1]) {
+        [array[j], array[j + 1]] = [array[j + 1], array[j]];
+        steps.push({
+          array: [...array],
+          highlight: [],
+          swap: [j, j + 1],
+          compare: [],
+          sorted: [...sorted],
+          description: `Swapping ${array[j + 1]} and ${array[j]}`
+        });
+      }
+    }
+    sorted.unshift(array.length - 1 - i);
+    steps.push({
+      array: [...array],
+      highlight: Array.from({ length: i + 1 }, (_, k) => array.length - 1 - k),
+      swap: [],
+      compare: [],
+      sorted: [...sorted],
+      description: `Element at index ${array.length - 1 - i} is now sorted`
+    });
+  }
+
+  return steps;
+}
+
+function generateSelectionSortSteps(arr: number[]): AlgorithmStep[] {
+  const steps: AlgorithmStep[] = [];
+  const array = [...arr];
+  const sorted: number[] = [];
+  
+  steps.push({ array: [...array], highlight: [], swap: [], compare: [], sorted: [], description: 'Starting array' });
+
+  for (let i = 0; i < array.length; i++) {
+    let minIdx = i;
+    
+    for (let j = i + 1; j < array.length; j++) {
+      steps.push({
+        array: [...array],
+        highlight: [minIdx],
+        swap: [],
+        compare: [minIdx, j],
+        sorted: [...sorted],
+        description: `Comparing minimum ${array[minIdx]} with ${array[j]}`
+      });
+      
+      if (array[j] < array[minIdx]) {
+        minIdx = j;
+      }
+    }
+
+    if (minIdx !== i) {
+      [array[i], array[minIdx]] = [array[minIdx], array[i]];
+      steps.push({
+        array: [...array],
+        highlight: [],
+        swap: [i, minIdx],
+        compare: [],
+        sorted: [...sorted],
+        description: `Swapping ${array[minIdx]} to position ${i}`
+      });
+    }
+    sorted.push(i);
+    steps.push({
+      array: [...array],
+      highlight: Array.from({ length: i + 1 }, (_, k) => k),
+      swap: [],
+      compare: [],
+      sorted: [...sorted],
+      description: `Element at index ${i} is now sorted`
+    });
+  }
+
+  return steps;
+}
+
+function generateInsertionSortSteps(arr: number[]): AlgorithmStep[] {
+  const steps: AlgorithmStep[] = [];
+  const array = [...arr];
+  const sorted: number[] = [];
+  
+  steps.push({ array: [...array], highlight: [], swap: [], compare: [], sorted: [], description: 'Starting array' });
+
+  for (let i = 1; i < array.length; i++) {
+    const key = array[i];
+    let j = i - 1;
+    
+    steps.push({
+      array: [...array],
+      highlight: [i],
+      swap: [],
+      compare: [],
+      sorted: [...sorted],
+      description: `Selected key element: ${key} at index ${i}`
+    });
+    
+    while (j >= 0 && array[j] > key) {
+      steps.push({
+        array: [...array],
+        highlight: [j, j + 1],
+        swap: [],
+        compare: [j, j + 1],
+        sorted: [...sorted],
+        description: `Comparing ${array[j]} > ${key}, shifting ${array[j]} to right`
+      });
+      array[j + 1] = array[j];
+      j--;
+    }
+    array[j + 1] = key;
+    
+    if (j + 1 !== i) {
+      steps.push({
+        array: [...array],
+        highlight: [j + 1],
+        swap: [j + 1],
+        compare: [],
+        sorted: [...sorted],
+        description: `Inserted ${key} at position ${j + 1}`
+      });
+    }
+  }
+  
+  for (let i = 0; i < array.length; i++) {
+    sorted.push(i);
+  }
+  
+  return steps;
+}
+
+function generateHeapSortSteps(arr: number[]): AlgorithmStep[] {
+  const steps: AlgorithmStep[] = [];
+  const array = [...arr];
+  const n = array.length;
+  const sorted: number[] = [];
+  
+  steps.push({ array: [...array], highlight: [], swap: [], compare: [], sorted: [], description: 'Starting array' });
+  
+  // Build max heap
+  for (let i = Math.floor(n / 2) - 1; i >= 0; i--) {
+    heapify(array, n, i, steps, sorted);
+  }
+  
+  // Extract elements
+  for (let i = n - 1; i > 0; i--) {
+    steps.push({
+      array: [...array],
+      highlight: [0, i],
+      swap: [0, i],
+      compare: [],
+      sorted: [...sorted],
+      description: `Moving max ${array[0]} to position ${i}`
+    });
+    [array[0], array[i]] = [array[i], array[0]];
+    sorted.unshift(i);
+    heapify(array, i, 0, steps, sorted);
+  }
+  
+  sorted.push(0);
+  steps.push({
+    array: [...array],
+    highlight: [],
+    swap: [],
+    compare: [],
+    sorted: Array.from({ length: n }, (_, i) => i),
+    description: 'Array is now sorted!'
+  });
+
+  return steps;
+}
+
+function heapify(arr: number[], n: number, i: number, steps: AlgorithmStep[], sorted: number[]) {
+  let largest = i;
+  const left = 2 * i + 1;
+  const right = 2 * i + 2;
+  
+  if (left < n) {
+    steps.push({
+      array: [...arr],
+      highlight: [largest, left],
+      swap: [],
+      compare: [largest, left],
+      sorted: [...sorted],
+      description: `Comparing parent ${arr[largest]} with left child ${arr[left]}`
+    });
+  }
+  
+  if (left < n && arr[left] > arr[largest]) largest = left;
+  if (right < n && arr[right] > arr[largest]) largest = right;
+  
+  if (largest !== i) {
+    steps.push({
+      array: [...arr],
+      highlight: [i, largest],
+      swap: [i, largest],
+      compare: [],
+      sorted: [...sorted],
+      description: `Swapping ${arr[i]} with ${arr[largest]}`
+    });
+    [arr[i], arr[largest]] = [arr[largest], arr[i]];
+    heapify(arr, n, largest, steps, sorted);
+  }
+}
+
+function generateLinearSearchSteps(arr: number[], target: number): AlgorithmStep[] {
+  const steps: AlgorithmStep[] = [];
+  
+  steps.push({ array: [...arr], highlight: [], swap: [], compare: [], sorted: [], description: `Searching for ${target} in the array` });
+
+  for (let i = 0; i < arr.length; i++) {
+    steps.push({
+      array: [...arr],
+      highlight: [i],
+      swap: [],
+      compare: [i],
+      sorted: [],
+      description: `Checking element at index ${i}: ${arr[i]}`
+    });
+
+    if (arr[i] === target) {
+      steps.push({
+        array: [...arr],
+        highlight: [i],
+        swap: [],
+        compare: [],
+        sorted: [],
+        description: `Found ${target} at index ${i}!`
+      });
+      return steps;
+    }
+  }
+
+  steps.push({ array: [...arr], highlight: [], swap: [], compare: [], sorted: [], description: `${target} not found in array` });
+  return steps;
+}
+
+function generateBinarySearchSteps(arr: number[], target: number): AlgorithmStep[] {
+  const steps: AlgorithmStep[] = [];
+  const sorted = [...arr].sort((a, b) => a - b);
+  
+  steps.push({ array: sorted, highlight: [], swap: [], compare: [], sorted: [], description: `Sorted array. Searching for ${target}` });
+
+  let left = 0;
+  let right = sorted.length - 1;
+
+  while (left <= right) {
+    const mid = Math.floor((left + right) / 2);
+    
+    steps.push({
+      array: sorted,
+      highlight: Array.from({ length: right - left + 1 }, (_, k) => left + k),
+      swap: [],
+      compare: [mid],
+      sorted: [],
+      description: `Checking middle element: ${sorted[mid]} (left: ${left}, right: ${right}, mid: ${mid})`
+    });
+
+    if (sorted[mid] === target) {
+      steps.push({
+        array: sorted,
+        highlight: [mid],
+        swap: [],
+        compare: [],
+        sorted: [],
+        description: `Found ${target} at index ${mid}!`
+      });
+      return steps;
+    } else if (sorted[mid] < target) {
+      left = mid + 1;
+      steps.push({
+        array: sorted,
+        highlight: Array.from({ length: right - left + 1 }, (_, k) => left + k),
+        swap: [],
+        compare: [],
+        sorted: [],
+        description: `${target} is greater, searching right half`
+      });
+    } else {
+      right = mid - 1;
+      steps.push({
+        array: sorted,
+        highlight: Array.from({ length: right - left + 1 }, (_, k) => left + k),
+        swap: [],
+        compare: [],
+        sorted: [],
+        description: `${target} is smaller, searching left half`
+      });
+    }
+  }
+
+  steps.push({ array: sorted, highlight: [], swap: [], compare: [], sorted: [], description: `${target} not found in array` });
+  return steps;
+}
+
+export default function Algorithms() {
+  const [selectedAlgorithm, setSelectedAlgorithm] = useState<string>('bubble-sort');
+  const [arraySize, setArraySize] = useState<number>(10);
+  const [speed, setSpeed] = useState<number>(500);
+  const [isPlaying, setIsPlaying] = useState<boolean>(false);
+  const [currentStep, setCurrentStep] = useState<number>(0);
+  const [steps, setSteps] = useState<AlgorithmStep[]>([]);
+  const [array, setArray] = useState<number[]>([]);
+  const [searchTarget, setSearchTarget] = useState<number>(0);
+  const [activeTab, setActiveTab] = useState<string>('visualizer');
+  const [codeLanguage, setCodeLanguage] = useState<'javascript' | 'python'>('javascript');
+  const [copied, setCopied] = useState(false);
+  const [customInput, setCustomInput] = useState('');
+  const [playgroundResult, setPlaygroundResult] = useState('');
+  const { toast } = useToast();
+
+  // Generate random array
+  const generateArray = useCallback(() => {
+    const newArray = Array.from({ length: arraySize }, () => 
+      Math.floor(Math.random() * 100) + 1
+    );
+    setArray(newArray);
+    setCurrentStep(0);
+    setIsPlaying(false);
+    
+    // Generate steps based on algorithm
+    if (selectedAlgorithm === 'bubble-sort') {
+      setSteps(generateBubbleSortSteps(newArray));
+    } else if (selectedAlgorithm === 'selection-sort') {
+      setSteps(generateSelectionSortSteps(newArray));
+    } else if (selectedAlgorithm === 'insertion-sort') {
+      setSteps(generateInsertionSortSteps(newArray));
+    } else if (selectedAlgorithm === 'heap-sort') {
+      setSteps(generateHeapSortSteps(newArray));
+    } else if (selectedAlgorithm === 'linear-search') {
+      setSteps(generateLinearSearchSteps(newArray, searchTarget || newArray[Math.floor(newArray.length / 2)]));
+    } else if (selectedAlgorithm === 'binary-search') {
+      setSteps(generateBinarySearchSteps(newArray, searchTarget || newArray[Math.floor(newArray.length / 2)]));
+    }
+  }, [arraySize, selectedAlgorithm, searchTarget]);
+
+  // Initialize on mount and algorithm change
+  useEffect(() => {
+    generateArray();
+  }, [selectedAlgorithm, arraySize]);
+
+  // Auto-play functionality
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
+    
+    if (isPlaying && steps.length > 0) {
+      interval = setInterval(() => {
+        setCurrentStep(prev => {
+          if (prev >= steps.length - 1) {
+            setIsPlaying(false);
+            return prev;
+          }
+          return prev + 1;
+        });
+      }, speed);
+    }
+
+    return () => clearInterval(interval);
+  }, [isPlaying, speed, steps.length]);
+
+  const currentArray = steps.length > 0 && currentStep < steps.length 
+    ? steps[currentStep].array 
+    : array;
+
+  const currentDescription = steps.length > 0 && currentStep < steps.length
+    ? steps[currentStep].description
+    : '';
+
+  const currentHighlight = steps.length > 0 && currentStep < steps.length
+    ? steps[currentStep].highlight
+    : [];
+
+  const currentCompare = steps.length > 0 && currentStep < steps.length
+    ? steps[currentStep].compare
+    : [];
+
+  const currentSwap = steps.length > 0 && currentStep < steps.length
+    ? steps[currentStep].swap
+    : [];
+
+  const currentSorted = steps.length > 0 && currentStep < steps.length
+    ? steps[currentStep].sorted
+    : [];
+
+  const selectedAlgo = ALGORITHMS.find(a => a.id === selectedAlgorithm);
+
+  const handleCopyCode = () => {
+    if (selectedAlgo?.code) {
+      navigator.clipboard.writeText(selectedAlgo.code[codeLanguage]);
+      setCopied(true);
+      toast({ title: 'Code copied to clipboard!' });
+      setTimeout(() => setCopied(false), 2000);
+    }
+  };
+
+  const runPlaygroundCode = () => {
+    try {
+      const target = parseInt(customInput) || 0;
+      let arr = Array.from({ length: 10 }, () => Math.floor(Math.random() * 100) + 1);
+      
+      let result = '';
+      switch (selectedAlgorithm) {
+        case 'bubble-sort':
+          const bubbleArr = [...arr];
+          for (let i = 0; i < bubbleArr.length; i++) {
+            for (let j = 0; j < bubbleArr.length - i - 1; j++) {
+              if (bubbleArr[j] > bubbleArr[j + 1]) {
+                [bubbleArr[j], bubbleArr[j + 1]] = [bubbleArr[j + 1], bubbleArr[j]];
+              }
+            }
+          }
+          result = `Bubble Sort: [${bubbleArr.join(', ')}]`;
+          break;
+        case 'selection-sort':
+          const selectArr = [...arr];
+          for (let i = 0; i < selectArr.length; i++) {
+            let minIdx = i;
+            for (let j = i + 1; j < selectArr.length; j++) {
+              if (selectArr[j] < selectArr[minIdx]) minIdx = j;
+            }
+            [selectArr[i], selectArr[minIdx]] = [selectArr[minIdx], selectArr[i]];
+          }
+          result = `Selection Sort: [${selectArr.join(', ')}]`;
+          break;
+        case 'binary-search':
+          const sorted = [...arr].sort((a, b) => a - b);
+          let left = 0, right = sorted.length - 1, found = -1;
+          while (left <= right) {
+            const mid = Math.floor((left + right) / 2);
+            if (sorted[mid] === target) { found = mid; break; }
+            else if (sorted[mid] < target) left = mid + 1;
+            else right = mid - 1;
+          }
+          result = found !== -1 ? `Binary Search: Found ${target} at index ${found}` : `Binary Search: ${target} not found`;
+          break;
+        default:
+          result = 'Algorithm execution simulation';
+      }
+      setPlaygroundResult(result);
+    } catch (e) {
+      setPlaygroundResult('Error executing code');
+    }
+  };
+
+  return (
+    <div className="container mx-auto p-6 space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold flex items-center gap-2">
+            <Cpu className="w-8 h-8 text-primary" />
+            Algorithm Visualizer
+          </h1>
+          <p className="text-muted-foreground">Learn algorithms through interactive visualization</p>
+        </div>
+        <div className="flex items-center gap-2">
+          <Badge variant="outline" className="text-sm">
+            {selectedAlgo?.category}
+          </Badge>
+          <Badge variant="secondary" className="text-sm">
+            {steps.length} Steps
+          </Badge>
+        </div>
+
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
+        <TabsList className="grid w-full grid-cols-5">
+          <TabsTrigger value="visualizer">Visualizer</TabsTrigger>
+          <TabsTrigger value="code">Code</TabsTrigger>
+          <TabsTrigger value="complexity">Complexity</TabsTrigger>
+          <TabsTrigger value="playground">Playground</TabsTrigger>
+          <TabsTrigger value="learn">Learn</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="visualizer" className="space-y-6">
+          {/* Controls */}
+          <Card>
+            <CardContent className="p-6">
+              <div className="flex flex-wrap gap-4 items-center">
+                <div className="flex-1 min-w-[200px]">
+                  <label className="text-sm font-medium mb-2 block">Algorithm</label>
+                  <Select value={selectedAlgorithm} onValueChange={setSelectedAlgorithm}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {ALGORITHMS.map(algo => (
+                        <SelectItem key={algo.id} value={algo.id}>
+                          {algo.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="w-[150px]">
+                  <label className="text-sm font-medium mb-2 block">Array Size</label>
+                  <Select value={arraySize.toString()} onValueChange={(v) => setArraySize(parseInt(v))}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="5">5 Elements</SelectItem>
+                      <SelectItem value="10">10 Elements</SelectItem>
+                      <SelectItem value="15">15 Elements</SelectItem>
+                      <SelectItem value="20">20 Elements</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="w-[150px]">
+                  <label className="text-sm font-medium mb-2 block">Speed</label>
+                  <Select value={speed.toString()} onValueChange={(v) => setSpeed(parseInt(v))}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="1000">Slow (1s)</SelectItem>
+                      <SelectItem value="500">Normal (0.5s)</SelectItem>
+                      <SelectItem value="200">Fast (0.2s)</SelectItem>
+                      <SelectItem value="50">Very Fast (50ms)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {(selectedAlgorithm === 'linear-search' || selectedAlgorithm === 'binary-search') && (
+                  <div className="w-[150px]">
+                    <label className="text-sm font-medium mb-2 block">Target</label>
+                    <Input
+                      type="number"
+                      value={searchTarget}
+                      onChange={(e) => setSearchTarget(parseInt(e.target.value) || 0)}
+                    />
+                  </div>
+                )}
+
+                <div className="flex gap-2 mt-6">
+                  <Button onClick={generateArray} variant="outline">
+                    <RotateCcw className="w-4 h-4 mr-2" />
+                    Reset
+                  </Button>
+                  <Button onClick={() => setIsPlaying(!isPlaying)}>
+                    {isPlaying ? <Pause className="w-4 h-4 mr-2" /> : <Play className="w-4 h-4 mr-2" />}
+                    {isPlaying ? 'Pause' : 'Play'}
+                  </Button>
+                  <Button variant="outline" onClick={() => {
+                    setIsPlaying(true);
+                    const interval = setInterval(() => {
+                      setCurrentStep(prev => {
+                        if (prev >= steps.length - 1) {
+                          clearInterval(interval);
+                          setIsPlaying(false);
+                          return prev;
+                        }
+                        return prev + 1;
+                      });
+                    }, 50);
+                  }}>
+                    <FastForward className="w-4 h-4 mr-2" />
+                    Fast
+                  </Button>
+                </div>
+            </CardContent>
+          </Card>
+
+          {/* Algorithm Info */}
+          {selectedAlgo && (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <Card className="md:col-span-2">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Code className="w-5 h-5" />
+                    {selectedAlgo.name}
+                  </CardTitle>
+                  <CardDescription>{selectedAlgo.description}</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div className="p-3 rounded-lg bg-green-500/10">
+                      <p className="text-xs text-muted-foreground mb-1">Best Case</p>
+                      <p className="font-mono font-bold text-green-500">{selectedAlgo.timeComplexityBest}</p>
+                    </div>
+                    <div className="p-3 rounded-lg bg-yellow-500/10">
+                      <p className="text-xs text-muted-foreground mb-1">Average</p>
+                      <p className="font-mono font-bold text-yellow-500">{selectedAlgo.timeComplexityAverage}</p>
+                    </div>
+                    <div className="p-3 rounded-lg bg-red-500/10">
+                      <p className="text-xs text-muted-foreground mb-1">Worst Case</p>
+                      <p className="font-mono font-bold text-red-500">{selectedAlgo.timeComplexityWorst}</p>
+                    </div>
+                    <div className="p-3 rounded-lg bg-blue-500/10">
+                      <p className="text-xs text-muted-foreground mb-1">Space</p>
+                      <p className="font-mono font-bold text-blue-500">{selectedAlgo.spaceComplexity}</p>
+                    </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg">Legend</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <div className="w-4 h-4 rounded bg-primary"></div>
+                    <span className="text-sm">Current/Highlight</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="w-4 h-4 rounded bg-secondary"></div>
+                    <span className="text-sm">Comparing</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="w-4 h-4 rounded bg-destructive"></div>
+                    <span className="text-sm">Swapping</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="w-4 h-4 rounded bg-green-500"></div>
+                    <span className="text-sm">Sorted</span>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          )}
+
+          {/* Visualization */}
+          <Card>
+            <CardContent className="p-6">
+              <div className="mb-4">
+                <div className="flex justify-between items-center mb-2">
+                  <p className="text-sm text-muted-foreground">
+                    <Clock className="w-4 h-4 inline mr-1" />
+                    Step {currentStep + 1} of {steps.length}
+                  </p>
+                  <Progress value={steps.length > 0 ? ((currentStep + 1) / steps.length) * 100 : 0} className="w-32" />
+                </div>
+                <p className="font-medium mt-1 bg-primary/10 p-3 rounded-lg">{currentDescription}</p>
+              </div>
+
+              <div className="flex items-end justify-center gap-1 h-[300px] px-4">
+                {currentArray.map((value, idx) => (
+                  <motion.div
+                    key={idx}
+                    className="relative flex flex-col items-center rounded-t-md transition-colors"
+                    animate={{
+                      backgroundColor: currentSorted.includes(idx) 
+                        ? 'hsl(142, 71%, 45%)'
+                        : currentHighlight.includes(idx) 
+                          ? 'hsl(var(--primary))' 
+                          : currentCompare.includes(idx)
+                            ? 'hsl(var(--secondary))'
+                            : currentSwap.includes(idx)
+                              ? 'hsl(var(--destructive))'
+                              : 'hsl(var(--muted))'
+                    }}
+                    style={{
+                      height: `${Math.max((value / 100) * 250, 20)}px`,
+                      width: `${Math.max(350 / arraySize - 4, 15)}px`,
+                      minWidth: '15px'
+                    }}
+                  >
+                    <span className="absolute -top-6 text-xs font-mono">
+                      {value}
+                    </span>
+                    <span className="absolute -bottom-5 text-[10px] text-muted-foreground">
+                      {idx}
+                    </span>
+                  </motion.div>
+                ))}
+              </div>
+
+              {/* Step controls */}
+              <div className="flex justify-center gap-2 mt-8">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentStep(0)}
+                  disabled={currentStep === 0}
+                >
+                  Start
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentStep(Math.max(0, currentStep - 1))}
+                  disabled={currentStep === 0}
+                >
+                  -10
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentStep(Math.max(0, currentStep - 1))}
+                  disabled={currentStep === 0}
+                >
+                  Previous
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentStep(Math.min(steps.length - 1, currentStep + 1))}
+                  disabled={currentStep >= steps.length - 1}
+                >
+                  Next
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentStep(Math.min(steps.length - 1, currentStep + 10))}
+                  disabled={currentStep >= steps.length - 1}
+                >
+                  +10
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentStep(steps.length - 1)}
+                  disabled={currentStep >= steps.length - 1}
+                >
+                  End
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="code" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <CardTitle className="flex items-center gap-2">
+                  <FileCode className="w-5 h-5" />
+                  Implementation
+                </CardTitle>
+                <div className="flex gap-2">
+                  <Select value={codeLanguage} onValueChange={(v: 'javascript' | 'python') => setCodeLanguage(v)}>
+                    <SelectTrigger className="w-32">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="javascript">JavaScript</SelectItem>
+                      <SelectItem value="python">Python</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <Button variant="outline" size="sm" onClick={handleCopyCode}>
+                    {copied ? <Check className="w-4 h-4 mr-2" /> : <Copy className="w-4 h-4 mr-2" />}
+                    {copied ? 'Copied!' : 'Copy'}
+                  </Button>
+                </div>
+            </CardHeader>
+            <CardContent>
+              <ScrollArea className="h-[400px] w-full rounded-lg bg-slate-950 p-4">
+                <pre className="text-sm font-mono text-green-400">
+                  {selectedAlgo?.code?.[codeLanguage] || 'Select an algorithm to view code'}
+                </pre>
+              </ScrollArea>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="complexity" className="space-y-4">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <BarChart3 className="w-5 h-5" />
+                  Time Complexity Comparison
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="h-[300px]">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={COMPLEXITY_DATA}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
+                      <XAxis dataKey="name" stroke="rgba(255,255,255,0.5)" fontSize={10} angle={-45} textAnchor="end" height={80} />
+                      <YAxis stroke="rgba(255,255,255,0.5)" />
+                      <Tooltip contentStyle={{ backgroundColor: 'hsl(var(--card))', border: '1px solid hsl(var(--border))' }} />
+                      <Bar dataKey="best" fill="#22c55e" name="Best" />
+                      <Bar dataKey="average" fill="#eab308" name="Average" />
+                      <Bar dataKey="worst" fill="#ef4444" name="Worst" />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Layers className="w-5 h-5" />
+                  Algorithm Categories
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <div className="p-4 rounded-lg bg-purple-500/10 border border-purple-500/20">
+                    <h4 className="font-semibold text-purple-400 flex items-center gap-2">
+                      <ArrowUpDown className="w-4 h-4" />
+                      Sorting Algorithms
+                    </h4>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      Bubble, Selection, Insertion, Merge, Quick, Heap, Radix Sort
+                    </p>
+                  </div>
+                  <div className="p-4 rounded-lg bg-blue-500/10 border border-blue-500/20">
+                    <h4 className="font-semibold text-blue-400 flex items-center gap-2">
+                      <Search className="w-4 h-4" />
+                      Searching Algorithms
+                    </h4>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      Linear Search, Binary Search
+                    </p>
+                  </div>
+                  <div className="p-4 rounded-lg bg-green-500/10 border border-green-500/20">
+                    <h4 className="font-semibold text-green-400 flex items-center gap-2">
+                      <Network className="w-4 h-4" />
+                      Graph Algorithms
+                    </h4>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      BFS, DFS, Dijkstra's, A* Search
+                    </p>
+                  </div>
+              </CardContent>
+            </Card>
+          </div>
+        </TabsContent>
+
+        <TabsContent value="playground" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Terminal className="w-5 h-5" />
+                Algorithm Playground
+              </CardTitle>
+              <CardDescription>
+                Test algorithms with custom input
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div>
+                <label className="text-sm font-medium mb-2 block">Custom Input (for target search)</label>
+                <Input
+                  type="number"
+                  placeholder="Enter target value for search algorithms"
+                  value={customInput}
+                  onChange={(e) => setCustomInput(e.target.value)}
+                />
+              </div>
+              <div className="flex gap-2">
+                <Button onClick={runPlaygroundCode}>
+                  <PlayCircle className="w-4 h-4 mr-2" />
+                  Run Algorithm
+                </Button>
+                <Button variant="outline" onClick={() => setPlaygroundResult('')}>
+                  <RefreshCw className="w-4 h-4 mr-2" />
+                  Clear
+                </Button>
+              </div>
+              {playgroundResult && (
+                <div className="p-4 rounded-lg bg-slate-950 border border-slate-800">
+                  <pre className="text-sm font-mono text-green-400 whitespace-pre-wrap">{playgroundResult}</pre>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="learn" className="space-y-4">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Lightbulb className="w-5 h-5 text-amber-400" />
+                  When to Use Each Algorithm
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {selectedAlgo?.useCases?.map((useCase, i) => (
+                  <div key={i} className="p-3 rounded-lg bg-amber-400/10 flex items-center gap-2">
+                    <CheckCircle className="w-4 h-4 text-amber-400 shrink-0" />
+                    <span className="text-sm">{useCase}</span>
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <BookOpen className="w-5 h-5 text-blue-400" />
+                  Interview Tips
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {selectedAlgo?.interviewTips?.map((tip, i) => (
+                  <div key={i} className="p-3 rounded-lg bg-blue-400/10 flex items-center gap-2">
+                    <Lightbulb className="w-4 h-4 text-blue-400 shrink-0" />
+                    <span className="text-sm">{tip}</span>
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
+          </div>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Algorithm Selection Guide</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b">
+                      <th className="text-left p-2">Algorithm</th>
+                      <th className="text-left p-2">Best</th>
+                      <th className="text-left p-2">Average</th>
+                      <th className="text-left p-2">Worst</th>
+                      <th className="text-left p-2">Space</th>
+                      <th className="text-left p-2">Stable</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {ALGORITHMS.slice(0, 7).map(algo => (
+                      <tr key={algo.id} className="border-b border-border">
+                        <td className="p-2 font-medium">{algo.name}</td>
+                        <td className="p-2 text-green-400">{algo.timeComplexityBest}</td>
+                        <td className="p-2 text-yellow-400">{algo.timeComplexityAverage}</td>
+                        <td className="p-2 text-red-400">{algo.timeComplexityWorst}</td>
+                        <td className="p-2 text-blue-400">{algo.spaceComplexity}</td>
+                        <td className="p-2">{['bubble-sort', 'insertion-sort', 'merge-sort'].includes(algo.id) ? '✓' : '✗'}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
+    </div>
+  );
+}

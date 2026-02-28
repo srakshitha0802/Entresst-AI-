@@ -1,0 +1,324 @@
+t is 
+import { createClient, type SupabaseClient } from '@supabase/supabase-js';
+import admin from 'firebase-admin';
+import dotenv from 'dotenv';
+import { MongoDBService, connectToMongoDB, isMongoDBConfigured } from './mongodb';
+
+dotenv.config();
+
+// Check if required environment variables are present
+const SUPABASE_URL = process.env.SUPABASE_URL;
+const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY;
+const FIREBASE_PROJECT_ID = process.env.FIREBASE_PROJECT_ID;
+const FIREBASE_CLIENT_EMAIL = process.env.FIREBASE_CLIENT_EMAIL;
+const FIREBASE_PRIVATE_KEY = process.env.FIREBASE_PRIVATE_KEY;
+
+// Validate Supabase configuration
+const isSupabaseConfigured = !!(SUPABASE_URL && SUPABASE_ANON_KEY);
+
+// Supabase client - only initialize if properly configured
+let supabase: SupabaseClient | null = null;
+if (isSupabaseConfigured) {
+  try {
+    supabase = createClient(SUPABASE_URL!, SUPABASE_ANON_KEY!);
+    console.log('Supabase client initialized');
+  } catch (error) {
+    console.error('Failed to initialize Supabase client:', error);
+  }
+} else {
+  console.warn('Supabase is not configured.');
+}
+
+// Firebase configuration validation
+const isFirebaseConfigured = !!(
+  FIREBASE_PROJECT_ID && 
+  FIREBASE_CLIENT_EMAIL && 
+  FIREBASE_PRIVATE_KEY
+);
+
+let firebaseApp: admin.app.App | null = null;
+let firebaseStorage: admin.storage.Storage | null = null;
+let firebaseDb: admin.firestore.Firestore | null = null;
+
+if (isFirebaseConfigured) {
+  try {
+    firebaseApp = admin.initializeApp({
+      credential: admin.credential.cert({
+        projectId: FIREBASE_PROJECT_ID,
+        clientEmail: FIREBASE_CLIENT_EMAIL,
+        privateKey: FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
+      }),
+      storageBucket: process.env.FIREBASE_STORAGE_BUCKET || `${FIREBASE_PROJECT_ID}.appspot.com`
+    });
+    firebaseStorage = firebaseApp.storage();
+    firebaseDb = firebaseApp.firestore();
+    console.log('Firebase initialized');
+  } catch (error) {
+    console.error('Failed to initialize Firebase:', error);
+  }
+}
+
+export { supabase, firebaseStorage, firebaseDb };
+
+export const isStorageConfigured = isSupabaseConfigured || isFirebaseConfigured || isMongoDBConfigured;
+
+export const configuredServices = {
+  supabase: isSupabaseConfigured,
+  firebase: isFirebaseConfigured,
+  mongodb: isMongoDBConfigured
+};
+
+export interface StorageService {
+  saveData(collection: string, data: any): Promise<any>;
+  getData(collection: string, id?: string): Promise<any>;
+  updateData(collection: string, id: string, data: any): Promise<any>;
+  deleteData(collection: string, id: string): Promise<any>;
+  uploadFile(file: Buffer, filename: string, contentType: string): Promise<string>;
+}
+
+// In-memory storage - SHARED across all backends
+const memoryStore = new Map<string, any[]>();
+
+async function saveToMemory(collection: string, data: any): Promise<any> {
+  const key = `storage_${collection}`;
+  const existing = memoryStore.get(key) || [];
+  const id = data.id || `mem_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+  const item = { id, ...data };
+  memoryStore.set(key, [...existing, item]);
+  return item;
+}
+
+async function getFromMemory(collection: string, id?: string): Promise<any> {
+  const key = `storage_${collection}`;
+  const data = memoryStore.get(key) || [];
+  if (id) {
+    return data.find((item: any) => item.id === id) || null;
+  }
+  return data;
+}
+
+const memoryStorage: StorageService = {
+  async saveData(collection: string, data: any) {
+    return saveToMemory(collection, data);
+  },
+  async getData(collection: string, id?: string) {
+    return getFromMemory(collection, id);
+  },
+  async updateData(collection: string, id: string, data: any) {
+    const key = `storage_${collection}`;
+    const existing = memoryStore.get(key) || [];
+    const index = existing.findIndex((item: any) => item.id === id);
+    if (index >= 0) {
+      existing[index] = { ...existing[index], ...data };
+      memoryStore.set(key, existing);
+      return existing[index];
+    }
+    throw new Error('Item not found');
+  },
+  async deleteData(collection: string, id: string) {
+    const key = `storage_${collection}`;
+    const existing = memoryStore.get(key) || [];
+    memoryStore.set(key, existing.filter((item: any) => item.id !== id));
+    return true;
+  },
+  async uploadFile() {
+    throw new Error('File upload not available');
+  }
+};
+
+export class SupabaseService implements StorageService {
+  private client: SupabaseClient;
+
+  constructor(client: SupabaseClient) {
+    this.client = client;
+  }
+
+  async saveData(collection: string, data: any) {
+    if (!this.client) throw new Error('Supabase not configured');
+    
+    try {
+      const { data: result, error } = await this.client
+        .from(collection)
+        .insert([data])
+        .select();
+    
+      if (error) {
+        console.log(`Supabase save failed for ${collection}, using memory:`, error.message);
+        return saveToMemory(collection, data);
+      }
+      return result[0] || saveToMemory(collection, data);
+    } catch (e) {
+      return saveToMemory(collection, data);
+    }
+  }
+
+  async getData(collection: string, id?: string) {
+    if (!this.client) throw new Error('Supabase not configured');
+
+    // First check memory
+    const memData = await getFromMemory(collection, id);
+    if (memData && (id ? true : memData.length > 0)) {
+      return memData;
+    }
+    
+    // Then try Supabase
+    try {
+      if (id) {
+        const { data, error } = await this.client
+          .from(collection)
+          .select('*')
+          .eq('id', id)
+          .single();
+        return data || null;
+      } else {
+        const { data, error } = await this.client.from(collection).select('*');
+        return data || [];
+      }
+    } catch (error) {
+      return id ? null : [];
+    }
+  }
+
+  async updateData(collection: string, id: string, data: any) {
+    if (!this.client) throw new Error('Supabase not configured');
+    try {
+      const { data: result, error } = await this.client
+        .from(collection)
+        .update(data)
+        .eq('id', id)
+        .select();
+      return error ? { id, ...data } : (result[0] || { id, ...data });
+    } catch (e) {
+      return { id, ...data };
+    }
+  }
+
+  async deleteData(collection: string, id: string) {
+    if (!this.client) throw new Error('Supabase not configured');
+    try {
+      await this.client.from(collection).delete().eq('id', id);
+      return true;
+    } catch (e) {
+      return true;
+    }
+  }
+
+  async uploadFile() {
+    throw new Error('File upload not available');
+  }
+}
+
+export class FirebaseService implements StorageService {
+  private db: admin.firestore.Firestore;
+  private storage: admin.storage.Storage;
+
+  constructor(db: admin.firestore.Firestore, storage: admin.storage.Storage) {
+    this.db = db;
+    this.storage = storage;
+  }
+
+  async saveData(collection: string, data: any) {
+    const docRef = await this.db.collection(collection).add({
+      ...data,
+      createdAt: admin.firestore.FieldValue.serverTimestamp()
+    });
+    return { id: docRef.id, ...data };
+  }
+
+  async getData(collection: string, id?: string) {
+    if (id) {
+      const doc = await this.db.collection(collection).doc(id).get();
+      return doc.exists ? { id: doc.id, ...doc.data() } : null;
+    }
+    const snapshot = await this.db.collection(collection).get();
+    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+  }
+
+  async updateData(collection: string, id: string, data: any) {
+    await this.db.collection(collection).doc(id).update(data);
+    return { id, ...data };
+  }
+
+  async deleteData(collection: string, id: string) {
+    await this.db.collection(collection).doc(id).delete();
+    return true;
+  }
+
+  async uploadFile() {
+    throw new Error('File upload not available');
+  }
+}
+
+export class MongoDBStorageService implements StorageService {
+  async saveData(collection: string, data: any): Promise<any> {
+    const mongoService = new MongoDBService(collection);
+    return await mongoService.saveData(data);
+  }
+
+  async getData(collection: string, id?: string): Promise<any> {
+    const mongoService = new MongoDBService(collection);
+    return await mongoService.getData(id);
+  }
+
+  async updateData(collection: string, id: string, data: any): Promise<any> {
+    const mongoService = new MongoDBService(collection);
+    return await mongoService.updateData(id, data);
+  }
+
+  async deleteData(collection: string, id: string): Promise<boolean> {
+    const mongoService = new MongoDBService(collection);
+    return await mongoService.deleteData(id);
+  }
+
+  async uploadFile() {
+    throw new Error('File upload not available');
+  }
+}
+
+// Default storage service
+let storageService: StorageService;
+
+async function initializeStorageService(): Promise<StorageService> {
+  if (isMongoDBConfigured) {
+    try {
+      await connectToMongoDB();
+      console.log('Using MongoDB as primary storage');
+      return new MongoDBStorageService();
+    } catch (error) {
+      console.error('MongoDB failed, falling back:', error);
+    }
+  }
+
+  if (supabase) {
+    console.log('Using Supabase as storage');
+    return new SupabaseService(supabase);
+  }
+
+  if (firebaseDb && firebaseStorage) {
+    console.log('Using Firebase as storage');
+    return new FirebaseService(firebaseDb, firebaseStorage);
+  }
+
+  console.warn('Using in-memory storage');
+  return memoryStorage;
+}
+
+initializeStorageService().then(service => {
+  storageService = service;
+  console.log('Storage service initialized');
+}).catch(error => {
+  console.error('Storage init failed:', error);
+  storageService = memoryStorage;
+});
+
+export async function getStorageService(): Promise<StorageService> {
+  if (!storageService) {
+    return await initializeStorageService();
+  }
+  return storageService;
+}
+
+export const storageServicePromise = initializeStorageService();
+storageServicePromise.then(service => { storageService = service; });
+export { storageService as storage };
+
