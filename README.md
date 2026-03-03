@@ -4,7 +4,7 @@
 [![GitHub Last Commit](https://img.shields.io/github/last-commit/srakshitha0802/Entresst-AI-)](https://github.com/srakshitha0802/Entresst-AI-/commits/main)
 
 **Lead Developer:** srakshitha0802  
-**Contributors:** lakshmijahnavik
+**Contributors:** lakshmijahnavik, SaiPriyamshu, sirishapyadav16
 
 A comprehensive full-stack AI-powered career development platform that helps users track their skills, prepare for interviews, explore job opportunities, and accelerate their career growth.
 
@@ -290,6 +290,8 @@ MIT License - feel free to use this project for any purpose.
 ### Core Contributors
 - **srakshitha0802** - Lead Developer
 - **lakshmijahnavik** - Contributor
+- **SaiPriyamshu** - Collaborator
+- **sirishapyadav16** - Collaborator
 
 ---
 
