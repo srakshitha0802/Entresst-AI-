@@ -279,12 +279,11 @@ Entresst-AI/
 
 MIT License - feel free to use this project for any purpose.
 
-## 🙏 Acknowledgments
+## 👥 Collaborators
 
-- [Radix UI](https://radix-ui.com/) for the component primitives
-- [Lucide React](https://lucide.dev/) for icons
-- [Google Gemini](https://deepmind.google/technologies/gemini) for AI capabilities
-- [OpenAI](https://openai.com/) for AI capabilities
+### Core Contributors
+- **srakshitha0802** - Lead Developer
+- **lakshmijahnavik** - Contributor
 
 ---
 
